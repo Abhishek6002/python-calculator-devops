@@ -122,10 +122,97 @@ This project focuses on local development, Docker-based containerization, automa
 
 AWS deployment and Continuous Deployment are outside the current implementation scope.
 
+## Advanced GitHub Actions CI Workflow
+
+### 1. Triggers
+
+The workflow runs on:
+- Pull requests targeting `master`.
+- Pushes to `master`.
+
+This helps validate proposed changes before merging and checks changes pushed to the default branch.
+
+### 2. Job Architecture
+
+The workflow contains two jobs:
+
+**Test**
+- Runs on Ubuntu.
+- Uses a matrix to test Python 3.10 and Python 3.12.
+- Runs unit tests and generates XML test reports.
+- Uses `fail-fast: false` so both Python versions can report their results.
+
+**Build Docker Image**
+- Runs only after the test matrix succeeds.
+- Builds the Docker image.
+- Runs unit tests inside the container.
+
+This dependency prevents the Docker job from running when the test job fails.
+
+### 3. Test Reports and Artifacts
+
+The workflow uses `unittest-xml-reporting` to generate XML test reports.
+
+Reports are uploaded as GitHub Actions artifacts:
+- `test-report-python-3.10`
+- `test-report-python-3.12`
+
+Artifacts are retained for seven days. The upload step uses `if: always()` so reports can also be uploaded when tests fail, provided report files were generated.
+
+### 4. Efficiency Improvements
+
+**Pip caching**
+
+The workflow enables pip caching through `actions/setup-python` and uses `requirements.txt` as the cache dependency file. This allows dependencies to be reused when the cache key matches.
+
+**Concurrency control**
+
+The workflow uses a concurrency group with `cancel-in-progress: true`. Newer runs in the same group can cancel obsolete runs, reducing unnecessary CI work.
+
+The trade-off is that an earlier run may be cancelled before finishing, so the latest run must still complete successfully.
+
+### 5. Security
+
+- Workflow permissions are restricted to `contents: read`.
+- The workflow uses `pull_request`, not `pull_request_target`.
+- No custom repository secrets or personal access tokens are required for this workflow.
+- Third-party actions use version tags, such as `actions/checkout@v4` and `actions/setup-python@v5`.
+
+**Further hardening:** Pinning third-party actions to verified full commit SHAs would provide stronger protection against changes to action tags. Full SHA pinning is not currently implemented.
+
+### 6. Merge Gate and Validation Evidence
+
+Branch protection is configured for `master` to require:
+- Python 3.10 test check.
+- Python 3.12 test check.
+- Docker build check.
+
+A successful pull request demonstrated that all required checks can pass. A separate test pull request deliberately introduced an incorrect assertion. GitHub blocked merging while required checks failed. After correcting the assertion, all three checks passed again.
+
+Evidence:
+- Successful PR: https://github.com/Abhishek6002/python-calculator-devops/pull/1
+- Failing-check PR: https://github.com/Abhishek6002/python-calculator-devops/pull/2
+
+### 7. Efficiency Summary
+
+Compared with the earlier workflow, the updated workflow adds:
+- Testing across multiple Python versions.
+- XML test reports and downloadable artifacts.
+- Dependency caching.
+- Cancellation of obsolete workflow runs.
+- A required-check merge gate.
+
+These changes improve test coverage, troubleshooting, and CI resource usage.
+
+### 8. Limitations
+
+- The workflow builds and tests the Docker image but does not publish it or deploy the application.
+- Workflow artifacts are retained for seven days.
+- Full SHA pinning of third-party actions remains a potential security improvement.
+
 ## Author
 
 Abhishek Kumar
 
 
-Testing a PR validation workflow for Task A
 
