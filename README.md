@@ -193,6 +193,15 @@ Evidence:
 - Successful PR: https://github.com/Abhishek6002/python-calculator-devops/pull/1
 - Failing-check PR: https://github.com/Abhishek6002/python-calculator-devops/pull/2
 
+### Failed Test and Report Artifact
+- Failed workflow run with downloadable test reports:
+  https://github.com/Abhishek6002/python-calculator-devops/actions/runs/40025214429
+
+### Concurrency Cancellation
+- Successful workflow run after newer commits:
+  https://github.com/Abhishek6002/python-calculator-devops/actions/runs/40216431810
+- An older run was cancelled when a newer commit superseded it.
+
 ### 7. Efficiency Summary
 
 Compared with the earlier workflow, the updated workflow adds:
